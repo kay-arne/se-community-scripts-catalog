@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "Display name, e.g. \"FortiGate OT Lab\"."
+    },
+    "tagline": {
+      "type": "string",
+      "maxLength": 160,
+      "pattern": "\\S",
+      "description": "One line (max 160 characters) shown on the catalog card."
+    },
+    "description": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      },
+      "description": "Paragraphs for the \"About\" section: what it is, who it is for."
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "lab",
+        "demo",
+        "tool",
+        "automation"
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "proxmox",
+        "docker",
+        "kubernetes",
+        "fortigate",
+        "linux",
+        "other"
+      ],
+      "description": "Where the script runs."
+    },
+    "status": {
+      "default": "stable",
+      "type": "string",
+      "enum": [
+        "stable",
+        "beta",
+        "experimental"
+      ]
+    },
+    "icon": {
+      "type": "string",
+      "enum": [
+        "factory",
+        "split",
+        "network",
+        "server",
+        "shield",
+        "globe",
+        "cloud",
+        "box",
+        "flask",
+        "terminal"
+      ],
+      "description": "One of the built-in icons."
+    },
+    "products": {
+      "default": [],
+      "description": "Fortinet products the script deploys or demonstrates.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "tags": {
+      "default": [],
+      "description": "Search keywords.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "updated": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+      "description": "Date of the last meaningful change, YYYY-MM-DD."
+    },
+    "repository": {
+      "description": "Public repository with the script's source.",
+      "type": "string",
+      "pattern": "^https:\\/\\/\\S+$"
+    },
+    "language": {
+      "description": "Language of the deployed tool's own UI/docs, when not English.",
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "requirements": {
+      "default": [],
+      "description": "Prerequisites and resource footprint, shown as a list.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "install": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "Name of this install option, e.g. \"Interactive install\"."
+          },
+          "description": {
+            "description": "What this option does / asks. Optional.",
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "runOn": {
+            "description": "Where to run the command, e.g. \"Proxmox VE host (root)\".",
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "command": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "The exact command to copy and run."
+          }
+        },
+        "required": [
+          "title",
+          "command"
+        ],
+        "additionalProperties": false
+      },
+      "description": "At least one way to install."
+    },
+    "steps": {
+      "default": [],
+      "description": "\"After installing\" steps, in order.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "features": {
+      "default": [],
+      "description": "\"What you can demo\" cards.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "diagram": {
+      "description": "Plain-text topology diagram, shown monospaced.",
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "components": {
+      "default": [],
+      "description": "\"What gets deployed\" table: VMs, containers, …",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "type": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "description"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "screenshots": {
+      "default": [],
+      "description": "Image files in the same folder as script.json.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*\\.(png|jpe?g|webp|gif|svg)$"
+          },
+          "caption": {
+            "type": "string",
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "file",
+          "caption"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "notes": {
+      "default": [],
+      "description": "\"Good to know\" remarks.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "\\S"
+      }
+    },
+    "links": {
+      "default": [],
+      "description": "Further reading.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "pattern": "\\S"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https:\\/\\/\\S+$"
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "author",
+    "category",
+    "description",
+    "icon",
+    "install",
+    "name",
+    "platform",
+    "tagline",
+    "updated"
+  ],
+  "additionalProperties": false,
+  "$id": "https://github.com/kay-arne/se-community-scripts-catalog/schema/script.schema.json",
+  "title": "SE Community Scripts — script.json"
+}

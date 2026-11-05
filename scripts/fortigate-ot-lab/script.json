@@ -1,0 +1,215 @@
+{
+  "$schema": "../../schema/script.schema.json",
+  "name": "FortiGate OT Lab",
+  "tagline": "A virtual Purdue-model factory with a FortiGate-VM as the only way in: segmentation, OT app control, OT IPS and virtual patching.",
+  "description": [
+    "A fully virtual OT lab built along the **Purdue model**: a FortiGate-VM (FortiOS 7.6 with the OT licence) is the **only** connection between your physical network and five OT segments, from the OT-DMZ down to Level 0 field I/O, plus a test-center segment that plays the rogue IT host.",
+    "The installer creates a controller container with a web UI. The controller builds the bridges, deploys and licenses the FortiGate, clones the simulated PLCs, HMI, historian, OPC UA gateway and engineering workstation, and pushes the OT policy set. Afterwards it doubles as a **test center**: run the validation scenarios and see PASS/FAIL next to the matching FortiGate log lines.",
+    "The OT bridges have no physical port and the Proxmox host has no IP on them. The controller manages devices **out-of-band** via the hypervisor (`pct exec`), so the FortiGate really is the only network path in."
+  ],
+  "category": "lab",
+  "platform": "proxmox",
+  "status": "beta",
+  "icon": "factory",
+  "products": [
+    "FortiGate",
+    "FortiGuard OT Security"
+  ],
+  "tags": [
+    "OT",
+    "ICS",
+    "Purdue",
+    "IEC 62443",
+    "Modbus",
+    "S7comm",
+    "OPC UA",
+    "virtual patching",
+    "segmentation"
+  ],
+  "author": {
+    "name": "Kay-Arne van Dalfsen"
+  },
+  "updated": "2026-11-02",
+  "repository": "https://github.com/kay-arne/fortigate-ot-lab",
+  "language": "Dutch (UI & lab guide)",
+  "requirements": [
+    {
+      "label": "Hypervisor",
+      "value": "Proxmox VE host with root shell access"
+    },
+    {
+      "label": "FortiGate-VM image",
+      "value": "`FGT_VM64_KVM-v7.6.x…fortios.qcow2`, uploaded in the web UI"
+    },
+    {
+      "label": "Licence",
+      "value": "FortiGate-VM `.lic` file or FortiFlex token — the lab uses 7 interfaces, so the eval licence is not enough — plus the OT Security Service"
+    },
+    {
+      "label": "OT signature packages",
+      "value": "`OTDB`, `OTDP`, `ISDB`, `IOTD` `.pkg` files from support.fortinet.com, uploaded once (pushed offline)"
+    },
+    {
+      "label": "Controller",
+      "value": "LXC · 2 vCPU · 2 GB RAM · 16 GB disk"
+    },
+    {
+      "label": "Whole lab (approx.)",
+      "value": "≈ 10 GB RAM: FortiGate 2 vCPU / 4 GB, ~15 small LXCs (256–512 MB each)"
+    },
+    {
+      "label": "Network",
+      "value": "One bridge/VLAN for the controller and FortiGate port1; DHCP or a static IP"
+    }
+  ],
+  "install": [
+    {
+      "title": "Interactive install",
+      "runOn": "Proxmox VE host (root)",
+      "description": "Choose **Default** or **Advanced**, just like the Proxmox community scripts. Advanced asks for name prefix, IDs, storage, bridge/VLAN, DHCP or static IP, UI port and VMID range, then shows a summary before anything is created. At the end it prints the web UI URL and password.",
+      "command": "bash -c \"$(curl -fsSL https://raw.githubusercontent.com/kay-arne/fortigate-ot-lab/main/install.sh)\""
+    },
+    {
+      "title": "Unattended install",
+      "runOn": "Proxmox VE host (root)",
+      "description": "Same choices as environment variables — see the header of `install.sh` for the full list.",
+      "command": "OTLAB_UNATTENDED=1 CT_BRIDGE=vmbr1 CT_VLAN=40 CT_IP=10.40.0.240/24 CT_GW=10.40.0.1 CT_STORAGE=local-zfs \\\n  bash -c \"$(curl -fsSL https://raw.githubusercontent.com/kay-arne/fortigate-ot-lab/main/install.sh)\""
+    },
+    {
+      "title": "Update an existing controller",
+      "runOn": "Proxmox VE host (root)",
+      "description": "Re-running the one-liner detects the controller and offers **Update**; the running lab is not touched. Updating is also possible from the web UI (**Updates** tab).",
+      "command": "OTLAB_UPDATE=1 bash -c \"$(curl -fsSL https://raw.githubusercontent.com/kay-arne/fortigate-ot-lab/main/install.sh)\""
+    }
+  ],
+  "steps": [
+    "Open the web UI on the URL the installer printed and log in as `admin`.",
+    "**Setup**: upload the FortiGate `.qcow2`, choose the licence (`.lic` or FortiFlex token), set the port1 WAN IP and an admin password. Upload the OT signature packages under **Settings → OT signatures**.",
+    "**Lab → Deploy lab**: the controller creates the Purdue bridges (`vmbr900`–`vmbr999`), the FortiGate-VM via cloud-init, one LXC template with all OT simulators, the device clones and the full policy set.",
+    "Open the **Test center** to run the validation tests, and hand out the three access paths: FortiGate GUI, SSH as contractor via the jump host (MFA + session recording), and a viewer for HMI, historian and MES.",
+    "For a demo or training, follow the lab guide — a narrative walk-through (“a night at Polderfris”) with a lesson and IEC 62443 mapping per chapter."
+  ],
+  "features": [
+    {
+      "title": "Zones & conduits",
+      "description": "Purdue levels as FortiGate ports; every conduit an explicit policy, everything else a logged implicit deny."
+    },
+    {
+      "title": "OT application control",
+      "description": "Read-only Modbus from L3 and the OPC UA gateway — writes are blocked by the `OT-readonly` profile."
+    },
+    {
+      "title": "Virtual patching",
+      "description": "A real Schneider UMAS DoS (CVE-2018-7846) against a simulated Modicon M580, dropped by the FortiGuard OT signatures — with a toggle to show the unpatched case."
+    },
+    {
+      "title": "Asset visibility",
+      "description": "Devices carry vendor MAC OUIs and answer Modbus device identification, so Asset Identity Center and OT View fingerprint vendor and model."
+    },
+    {
+      "title": "Secure remote access",
+      "description": "Contractor SSH through a DMZ jump host with MFA and session recording, then on to the engineering workstation."
+    },
+    {
+      "title": "“Break it” scenarios",
+      "description": "IT-to-PLC attempts, recon scans, DMZ bypass, S7 stop, Shellshock on the MES and PLC-to-internet — each with expected result and log lines."
+    }
+  ],
+  "diagram": "  Physical network (L4/L5, vmbr0)\n            │ port1\n     ┌──────┴──────┐\n     │  FortiGate  │  zones & conduits, OT application control, OT IPS\n     └┬──┬──┬──┬──┬┘\n port2│  │3 │4 │5 │6      port7\n L3.5 DMZ  L3 Ops  L2 Supervisory  L1 Control  L0 Process   Test Center\n vmbr935   vmbr930 vmbr920         vmbr910     vmbr900      vmbr999\n jump,     histo-  SCADA-HMI,      Modbus PLC  level sensor  probe\n patch,    rian,   OPC UA gw,      S7 PLC,     motor drive  (rogue/IT)\n mirror    MES     EWS             conveyor PLC",
+  "components": [
+    {
+      "name": "otlab-controller",
+      "type": "LXC",
+      "description": "Web UI, Proxmox orchestration, FortiGate provisioning, test center"
+    },
+    {
+      "name": "otlab-fgt",
+      "type": "VM",
+      "description": "FortiGate-VM 7.6, the only path between the uplink and the OT segments"
+    },
+    {
+      "name": "otlab-dmz-*",
+      "type": "LXC",
+      "description": "L3.5: jump host, patch/AV server, historian mirror"
+    },
+    {
+      "name": "otlab-historian, -mes",
+      "type": "LXC",
+      "description": "L3 site operations"
+    },
+    {
+      "name": "otlab-scada-hmi, -opcua-gw, -ews",
+      "type": "LXC",
+      "description": "L2 supervisory control"
+    },
+    {
+      "name": "otlab-plc-*",
+      "type": "LXC",
+      "description": "L1: two Modbus PLCs (tank, conveyor) and an S7 PLC (mixer)"
+    },
+    {
+      "name": "otlab-io-*",
+      "type": "LXC",
+      "description": "L0: level sensor and motor drive"
+    },
+    {
+      "name": "probe",
+      "type": "LXC",
+      "description": "Test-center host that plays the rogue IT device / attacker"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "00-lab-overzicht.jpg",
+      "caption": "Lab tab: the factory in Purdue levels, each level its own FortiGate port."
+    },
+    {
+      "file": "02-testcenter.jpg",
+      "caption": "Test center: expectation, outcome and the matching FortiGate log lines per test."
+    },
+    {
+      "file": "00-hmi.jpg",
+      "caption": "SCADA HMI viewer with live register values from all three PLCs."
+    },
+    {
+      "file": "01-toegang.jpg",
+      "caption": "The three access paths with URLs, logins and the viewer."
+    },
+    {
+      "file": "fgt-otview.jpg",
+      "caption": "FortiGate OT View: the assets per Purdue level."
+    },
+    {
+      "file": "fgt-assets.jpg",
+      "caption": "Asset Identity Center: devices recognised from their traffic."
+    },
+    {
+      "file": "fgt-policies.jpg",
+      "caption": "Firewall policies per Purdue conduit, with IPS and virtual patching."
+    },
+    {
+      "file": "04-breek-het.jpg",
+      "caption": "“Break it”: the tank PLC at 97% and the HMI raising an alarm."
+    }
+  ],
+  "notes": [
+    "The controller logs in to the host over **SSH** (`qm`, `pct`, `pvesh`). By default a dedicated `otlab` user with narrow sudo rules is created; revoke it any time with `otlab-revoke`. `qm`/`pct` are effectively root-equivalent, so treat this as visible and revocable, not as a sandbox.",
+    "The web UI is plain HTTP with a login form — keep it inside your lab network.",
+    "Linked clones need LVM-thin or ZFS; on `dir` storage the controller falls back to full clones.",
+    "Tear down with **Lab → Tear down…**; remove the controller itself with `pct destroy <id>` and then run `otlab-revoke`."
+  ],
+  "links": [
+    {
+      "label": "README",
+      "url": "https://github.com/kay-arne/fortigate-ot-lab#readme"
+    },
+    {
+      "label": "Lab guide (Dutch)",
+      "url": "https://github.com/kay-arne/fortigate-ot-lab/blob/main/docs/lab-guide.md"
+    },
+    {
+      "label": "FortiGate-VM on Proxmox (Fortinet docs)",
+      "url": "https://docs.fortinet.com/document/fortigate-private-cloud/8.0.0/proxmox-administration-guide/37920/deploying-a-fortigate-vm-into-proxmox"
+    }
+  ]
+}

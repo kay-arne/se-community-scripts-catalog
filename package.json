@@ -1,0 +1,13 @@
+{
+  "name": "se-community-scripts-catalog",
+  "private": true,
+  "type": "module",
+  "description": "Script definitions for the SE Toolbox Community Scripts store.",
+  "scripts": {
+    "validate": "node tools/validate.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}

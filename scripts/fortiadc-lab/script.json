@@ -1,0 +1,175 @@
+{
+  "$schema": "../../schema/script.schema.json",
+  "name": "FortiADC Lab",
+  "tagline": "Two datacenters, two FortiADC-VMs and a one-click demo cockpit for load balancing, SSL offloading, WAF and GSLB failover.",
+  "description": [
+    "A fully virtual demo lab for **FortiADC**: server load balancing, health checks, persistence, SSL offloading, content routing, WAF and GSLB across two datacenters (Amsterdam and Frankfurt), **each with its own FortiADC**.",
+    "The two FortiADCs form the GSLB together: both are authoritative for the GSLB subdomain and auto-sync each other's virtual servers, so even losing a complete datacenter — FortiADC included — is absorbed, just like in production.",
+    "A controller container with a web UI rolls everything out: day-0 over the serial console, licensing, certificates from a private lab CA, SLB/WAF per datacenter and the shared GSLB config. Afterwards its **demo cockpit** lets you break servers, generate traffic and launch attacks with one click, and an Ubuntu desktop VM (RDP) is your window into the lab. Same approach as the FortiGate OT Lab."
+  ],
+  "category": "lab",
+  "platform": "proxmox",
+  "status": "beta",
+  "icon": "split",
+  "products": [
+    "FortiADC"
+  ],
+  "tags": [
+    "ADC",
+    "load balancing",
+    "GSLB",
+    "WAF",
+    "SSL offloading",
+    "content routing",
+    "DNS",
+    "OWASP"
+  ],
+  "author": {
+    "name": "Kay-Arne van Dalfsen"
+  },
+  "updated": "2026-11-03",
+  "repository": "https://github.com/kay-arne/fortiadc-lab",
+  "language": "Dutch (UI & demo scripts)",
+  "requirements": [
+    {
+      "label": "Hypervisor",
+      "value": "Proxmox VE host with root shell access"
+    },
+    {
+      "label": "FortiADC-VM image",
+      "value": "KVM zip: `boot.qcow2` + `data.qcow2` (one set for both FortiADCs), uploaded in the web UI"
+    },
+    {
+      "label": "Licences",
+      "value": "Two FortiADC-VM licences (VM02, 2 vCPU) — `.lic` file or FortiFlex token per FortiADC"
+    },
+    {
+      "label": "Controller",
+      "value": "LXC · 2 vCPU · 2 GB RAM · 20 GB disk"
+    },
+    {
+      "label": "Whole lab (approx.)",
+      "value": "≈ 30 GB RAM: 2 × FortiADC (2 vCPU / 8 GB), desktop VM (4 vCPU / 6 GB), ~12 small LXCs"
+    },
+    {
+      "label": "Network",
+      "value": "Management LAN for the controller, FortiADC port1 and the desktop uplink; two management IPs for the FortiADCs"
+    },
+    {
+      "label": "Internet",
+      "value": "Needed once during deploy: Debian/Ubuntu packages, Ubuntu cloud image, Juice Shop and DVWA images"
+    }
+  ],
+  "install": [
+    {
+      "title": "Interactive install",
+      "runOn": "Proxmox VE host (root)",
+      "description": "Choose **Default** or **Advanced** (storage, bridge, VLAN, DHCP/static IP, VMID range, dedicated host user). The installer prints the web UI URL and password when done.",
+      "command": "bash -c \"$(curl -fsSL https://raw.githubusercontent.com/kay-arne/fortiadc-lab/main/install.sh)\""
+    },
+    {
+      "title": "Unattended install",
+      "runOn": "Proxmox VE host (root)",
+      "description": "Same choices as environment variables — see the header of `install.sh` for the full list (`NAME_PREFIX`, `CTID`, `LAB_VMID_BASE`, `HOST_ACCESS`, …).",
+      "command": "ADCLAB_UNATTENDED=1 CT_BRIDGE=vmbr0 CT_IP=192.168.1.240/24 CT_GW=192.168.1.1 \\\n  bash -c \"$(curl -fsSL https://raw.githubusercontent.com/kay-arne/fortiadc-lab/main/install.sh)\""
+    },
+    {
+      "title": "Update an existing controller",
+      "runOn": "Proxmox VE host (root)",
+      "description": "Re-running the one-liner detects the controller and offers **Update**; the lab itself is left alone.",
+      "command": "ADCLAB_UPDATE=1 bash -c \"$(curl -fsSL https://raw.githubusercontent.com/kay-arne/fortiadc-lab/main/install.sh)\""
+    }
+  ],
+  "steps": [
+    "Open the web UI on the URL the installer printed.",
+    "**Setup**: upload `boot.qcow2` and `data.qcow2`, set a management IP, gateway, DNS and admin password per FortiADC, and choose a licence per FortiADC (`.lic` or FortiFlex token).",
+    "**Lab → Deploy full lab**: bridges `vmbr800`/`810`/`820`, both FortiADC-VMs, the LXC template and all containers, the Juice Shop and DVWA images, the desktop VM, then day-0, licensing, certificates, SLB/WAF per datacenter and GSLB on both.",
+    "Wait for the desktop (about 15–30 minutes, status on the Lab tab), then connect with **RDP** using the address and credentials on the **Access** tab.",
+    "Run a demo from the **Demo cockpit** and follow the matching demo script (overview, load balancing, health checks, SSL, content routing, WAF, GSLB, visibility)."
+  ],
+  "features": [
+    {
+      "title": "Load balancing & persistence",
+      "description": "Virtual servers, pools, LB methods and insert-cookie persistence on a demo webshop."
+    },
+    {
+      "title": "Health checks",
+      "description": "Flip a real server to an application error, a crash or slow responses from the cockpit and watch it leave the pool."
+    },
+    {
+      "title": "SSL offloading",
+      "description": "Certificates from a private lab CA, TLS 1.2+ on the VIPs, HTTP → HTTPS redirect."
+    },
+    {
+      "title": "Content routing",
+      "description": "One VIP routing on host and path to shop, portal and API backends."
+    },
+    {
+      "title": "WAF",
+      "description": "Monitor vs. block, SQLi and XSS against OWASP Juice Shop and DVWA, exceptions."
+    },
+    {
+      "title": "GSLB with datacenter failover",
+      "description": "Two authoritative FortiADCs with DNS delegation and auto-sync — take a whole datacenter, FortiADC included, offline."
+    }
+  ],
+  "diagram": "  presenter ── vmbr0 ──┬── port1 FAD-AMS ── port3 ── vmbr810 Datacenter Amsterdam (real servers)\n  (management,         │        │\n   GSLB sync)          └── port1 FAD-FRA ── port3 ── vmbr820 Datacenter Frankfurt (real servers)\n                                │  │\n                        port2 ──┘  └── port2\n                                │\n           vmbr800 \"internet\": desktop, client, DNS · VIPs of both · GSLB DNS ns1 (AMS) + ns2 (FRA)",
+  "components": [
+    {
+      "name": "adclab-controller",
+      "type": "LXC",
+      "description": "Web UI, Proxmox orchestration, lab CA, FortiADC provisioning, demo cockpit"
+    },
+    {
+      "name": "adclab-fad-ams, -fad-fra",
+      "type": "VM",
+      "description": "One FortiADC-VM per datacenter: SLB/WAF for its own DC, GSLB together"
+    },
+    {
+      "name": "adclab-desktop",
+      "type": "VM",
+      "description": "Ubuntu 24.04 desktop with Firefox, trusts the lab CA, reachable over RDP"
+    },
+    {
+      "name": "adclab-dns",
+      "type": "LXC",
+      "description": "BIND9 for `adclab.internal`, delegates `gslb.adclab.internal` to both FortiADCs"
+    },
+    {
+      "name": "adclab-client",
+      "type": "LXC",
+      "description": "Traffic and attack generator driven by the cockpit"
+    },
+    {
+      "name": "adclab-shop-*, -portal-*, -api-*",
+      "type": "LXC",
+      "description": "Demo web apps per datacenter with switchable health"
+    },
+    {
+      "name": "adclab-juice-ams, -dvwa-fra",
+      "type": "LXC + Docker",
+      "description": "OWASP Juice Shop (AMS) and DVWA (FRA) as WAF targets"
+    }
+  ],
+  "screenshots": [],
+  "notes": [
+    "Day-0 configuration runs over the FortiADC serial console (`qm terminal`), so the FortiADCs need no pre-configuration — just the images and licences.",
+    "The controller reaches the host over **SSH** as a dedicated `adclab` user with sudo for only `qm`, `pct`, `pvesh` and placing two config ISOs. Revoke with `adclab-revoke`.",
+    "Lab bridges have no physical port; only FortiADC management and the desktop uplink sit on your network.",
+    "Add an application by adding a node, an `apps` line and a `virtual_servers` line to `lab/topology.yaml` — DNS, certificate, pool, health check, VS and GSLB follow automatically."
+  ],
+  "links": [
+    {
+      "label": "README",
+      "url": "https://github.com/kay-arne/fortiadc-lab#readme"
+    },
+    {
+      "label": "Demo scripts (Dutch)",
+      "url": "https://github.com/kay-arne/fortiadc-lab/blob/main/docs/demo/00-voorbereiding.md"
+    },
+    {
+      "label": "FortiADC field notes (Dutch)",
+      "url": "https://github.com/kay-arne/fortiadc-lab/blob/main/docs/fortiadc-praktijk.md"
+    }
+  ]
+}
